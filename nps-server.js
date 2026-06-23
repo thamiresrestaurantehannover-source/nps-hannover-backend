@@ -3,6 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 const multer = require('multer');
 const xlsx = require('xlsx');
 const cors = require('cors');
+const ws = require('ws');
 
 const app = express();
 app.use(express.json());
@@ -16,7 +17,9 @@ const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || 'hannover_nps_2
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  realtime: { transport: ws }
+});
 
 async function enviarTemplate(telefone, templateName, params) {
   const components = params && params.length > 0 ? [{
@@ -157,13 +160,17 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-    // Buscar registro mais recente do cliente
-    const { data: envios } = await supabase
+    const { data: envios, error: erroSelect } = await supabase
       .from('nps_envios')
       .select('*')
       .eq('telefone', telefone)
       .order('criado_em', { ascending: false })
       .limit(1);
+
+    if (erroSelect) {
+      console.error('Erro ao buscar registro:', erroSelect);
+      return;
+    }
 
     const envio = envios?.[0];
     if (!envio) {
@@ -173,7 +180,6 @@ app.post('/webhook', async (req, res) => {
 
     console.log('Registro encontrado:', envio.id, 'etapa:', envio.etapa, 'nota:', envio.nota);
 
-    // Extrair nota da resposta
     const notaTexto = textoRecebido.includes('Nota 8') ? '8' :
                       textoRecebido.includes('Nota 9') ? '9' :
                       textoRecebido.includes('Nota 10') ? '10' : null;
@@ -185,11 +191,12 @@ app.post('/webhook', async (req, res) => {
     if (envio.etapa === 'pesquisa_inicial' && nota !== null) {
       const novaEtapa = (nota === 8 || nota === 9) ? 'aguardando_comentario' : 'respondido';
 
-      await supabase.from('nps_envios')
+      const { error: erroUpdate } = await supabase.from('nps_envios')
         .update({ nota, etapa: novaEtapa, respondido_em: new Date().toISOString() })
         .eq('id', envio.id);
 
-      console.log('Nota salva:', nota, 'nova etapa:', novaEtapa);
+      if (erroUpdate) console.error('Erro ao salvar nota:', erroUpdate);
+      else console.log('Nota salva:', nota, 'nova etapa:', novaEtapa);
 
       if (nota === 10) {
         await enviarTemplate(telefone, 'se_responder_10', [envio.nome || 'cliente']);
@@ -231,10 +238,17 @@ app.post('/disparar', upload.single('planilha'), async (req, res) => {
       if (!telefone.startsWith('55')) telefone = '55' + telefone;
 
       try {
-        await supabase.from('nps_envios').insert({
+        const { error: erroInsert } = await supabase.from('nps_envios').insert({
           telefone, nome, unidade, data_visita: dataVisita,
           status: 'enviado', etapa: 'pesquisa_inicial'
         });
+
+        if (erroInsert) {
+          console.error('Erro ao inserir no Supabase:', erroInsert);
+          erros++;
+          continue;
+        }
+
         const resultado = await enviarTemplate(telefone, 'pesquisa_inicial', [nome]);
         if (resultado.error) {
           console.error('Erro Meta para', telefone, resultado.error);
