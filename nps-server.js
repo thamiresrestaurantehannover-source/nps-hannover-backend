@@ -3,7 +3,6 @@ const { createClient } = require('@supabase/supabase-js');
 const multer = require('multer');
 const xlsx = require('xlsx');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
 app.use(express.json());
@@ -36,7 +35,7 @@ async function enviarTemplate(telefone, templateName, params) {
     }
   };
 
-  console.log('Enviando para:', telefone, JSON.stringify(body));
+  console.log('Enviando template:', templateName, 'para:', telefone);
 
   const res = await fetch(`https://graph.facebook.com/v19.0/${PHONE_NUMBER_ID}/messages`, {
     method: 'POST',
@@ -158,27 +157,39 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-    const { data: envio } = await supabase
+    // Buscar registro mais recente do cliente
+    const { data: envios } = await supabase
       .from('nps_envios')
       .select('*')
       .eq('telefone', telefone)
-      .is('nota', null)
       .order('criado_em', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
 
-    if (!envio) return;
+    const envio = envios?.[0];
+    if (!envio) {
+      console.log('Nenhum registro encontrado para:', telefone);
+      return;
+    }
 
+    console.log('Registro encontrado:', envio.id, 'etapa:', envio.etapa, 'nota:', envio.nota);
+
+    // Extrair nota da resposta
     const notaTexto = textoRecebido.includes('Nota 8') ? '8' :
                       textoRecebido.includes('Nota 9') ? '9' :
                       textoRecebido.includes('Nota 10') ? '10' : null;
     const notaMatch = textoRecebido.match(/\b(10|[89])\b/);
     const nota = notaTexto ? parseInt(notaTexto) : (notaMatch ? parseInt(notaMatch[1]) : null);
 
+    console.log('Nota extraída:', nota, 'etapa atual:', envio.etapa);
+
     if (envio.etapa === 'pesquisa_inicial' && nota !== null) {
+      const novaEtapa = (nota === 8 || nota === 9) ? 'aguardando_comentario' : 'respondido';
+
       await supabase.from('nps_envios')
-        .update({ nota, etapa: nota === 8 || nota === 9 ? 'aguardando_comentario' : 'respondido', respondido_em: new Date().toISOString() })
+        .update({ nota, etapa: novaEtapa, respondido_em: new Date().toISOString() })
         .eq('id', envio.id);
+
+      console.log('Nota salva:', nota, 'nova etapa:', novaEtapa);
 
       if (nota === 10) {
         await enviarTemplate(telefone, 'se_responder_10', [envio.nome || 'cliente']);
@@ -194,6 +205,7 @@ app.post('/webhook', async (req, res) => {
         .eq('id', envio.id);
       await enviarTexto(telefone, 'Obrigado pelo seu feedback! Vamos usar sua opinião para melhorar cada vez mais. 💛');
     }
+
   } catch (err) {
     console.error('Erro no webhook:', err);
   }
@@ -256,6 +268,6 @@ app.get('/resultados', async (req, res) => {
 app.get('/', (req, res) => res.send('NPS Backend rodando!'));
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`NPS Backend rodando na porta ${PORT}`);
 });
