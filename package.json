@@ -2,6 +2,9 @@
   "name": "nps-hannover-backend",
   "version": "1.0.0",
   "main": "nps-server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node nps-server.js"
   },
