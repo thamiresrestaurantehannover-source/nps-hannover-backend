@@ -200,8 +200,10 @@ app.post('/webhook', async (req, res) => {
 
       if (nota === 10) {
         await enviarTemplate(telefone, 'se_responder_10', [envio.nome || 'cliente']);
-      } else if (nota === 8 || nota === 9) {
+      } else if (nota === 9) {
         await enviarTemplate(telefone, 'se_responder_8_ou_9', [envio.nome || 'cliente']);
+      } else if (nota === 8) {
+        await enviarTemplate(telefone, 'se_responde_8', [envio.nome || 'cliente']);
       }
       return;
     }
