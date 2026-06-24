@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPS Hannover</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --verde: #1a3a2a; --dourado: #c9a84c; --creme: #f7f4ee;
+    --branco: #ffffff; --cinza: #6b7280; --borda: #e5e0d5;
+    --erro: #dc2626; --sucesso: #16a34a;
+  }
+  body { font-family: 'Inter', sans-serif; background: var(--creme); color: var(--verde); min-height: 100vh; padding: 40px 20px; }
+  .container { max-width: 700px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 48px; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--verde); letter-spacing: -0.5px; }
+  .logo span { color: var(--dourado); }
+  .subtitulo { font-size: 13px; color: var(--cinza); margin-top: 6px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .card { background: var(--branco); border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid var(--borda); }
+  .card h2 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 8px; }
+  .card p.desc { font-size: 14px; color: var(--cinza); margin-bottom: 24px; line-height: 1.6; }
+  .campo { margin-bottom: 16px; }
+  .campo label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--verde); letter-spacing: 0.3px; }
+  .campo input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--borda); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; color: var(--verde); background: var(--creme); transition: border-color 0.2s; outline: none; }
+  .campo input:focus { border-color: var(--dourado); }
+  .campos-linha { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .drop-area { border: 2px dashed var(--borda); border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--creme); margin-bottom: 20px; }
+  .drop-area:hover, .drop-area.dragover { border-color: var(--dourado); background: #fdf8ee; }
+  .drop-area .icone { font-size: 36px; margin-bottom: 12px; }
+  .drop-area p { font-size: 14px; color: var(--cinza); margin: 0; }
+  .drop-area .arquivo-nome { font-size: 14px; font-weight: 600; color: var(--verde); margin-top: 8px; }
+  .btn { width: 100%; padding: 14px; background: var(--verde); color: var(--branco); border: none; border-radius: 10px; font-size: 15px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; transition: background 0.2s, transform 0.1s; }
+  .btn:hover { background: #0f2318; }
+  .btn:active { transform: scale(0.99); }
+  .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+  .btn-dourado { background: var(--dourado); color: var(--verde); }
+  .btn-dourado:hover { background: #b8953e; }
+  .btn-outline { background: transparent; color: var(--verde); border: 1.5px solid var(--borda); margin-top: 10px; }
+  .btn-outline:hover { background: var(--creme); }
+  .alerta { padding: 14px 16px; border-radius: 10px; font-size: 14px; margin-top: 16px; display: none; line-height: 1.5; }
+  .alerta.sucesso { background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--sucesso); }
+  .alerta.erro { background: #fef2f2; border: 1px solid #fecaca; color: var(--erro); }
+  .alerta.carregando { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .modelo { background: var(--creme); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .modelo p { font-size: 13px; color: var(--cinza); margin: 0 0 8px; }
+  .modelo code { font-family: monospace; font-size: 12px; background: var(--borda); padding: 2px 6px; border-radius: 4px; color: var(--verde); }
+  .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Login */
+  #loginScreen { position: fixed; inset: 0; background: var(--creme); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .login-card { background: var(--branco); border-radius: 20px; padding: 48px 40px; width: 100%; max-width: 400px; border: 1px solid var(--borda); text-align: center; }
+  .login-card .logo { margin-bottom: 8px; }
+  .login-card .subtitulo { margin-bottom: 36px; }
+  .login-erro { color: var(--erro); font-size: 13px; margin-top: 12px; display: none; }
+
+  /* Resultado */
+  .unidade-bloco { margin-bottom: 32px; }
+  .unidade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .unidade-nome { font-family: 'Playfair Display', serif; font-size: 18px; }
+  .nps-badge { font-size: 20px; font-weight: 700; }
+  .notas-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .nota-box { background: var(--creme); border-radius: 10px; padding: 12px; text-align: center; }
+  .nota-label { font-size: 11px; color: var(--cinza); margin-bottom: 6px; }
+  .nota-valor { font-size: 22px; font-weight: 700; }
+  .nota-pct { font-size: 11px; color: var(--cinza); margin-top: 2px; }
+  .pct-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .pct-box { background: var(--creme); border-radius: 10px; padding: 10px; text-align: center; }
+  .pct-box-label { font-size: 11px; color: var(--cinza); margin-bottom: 4px; }
+  .pct-box-valor { font-size: 16px; font-weight: 600; }
+  .pct-box-resp { font-size: 11px; color: #9ca3af; }
+  .comentarios-section { margin-top: 16px; }
+  .comentarios-titulo { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--cinza); margin-bottom: 10px; }
+  .comentario-item { background: var(--creme); border-radius: 10px; padding: 14px; margin-bottom: 8px; border-left: 3px solid var(--dourado); }
+  .comentario-cliente { font-size: 13px; font-weight: 600; color: var(--verde); margin-bottom: 2px; }
+  .comentario-meta { font-size: 11px; color: var(--cinza); margin-bottom: 6px; }
+  .comentario-texto { font-size: 13px; color: #374151; line-height: 1.5; }
+  .sem-comentarios { font-size: 13px; color: var(--cinza); font-style: italic; }
+  .divisor-unidade { border: none; border-top: 1px solid var(--borda); margin: 24px 0; }
+  .total-geral { background: var(--creme); border-radius: 12px; padding: 20px; text-align: center; margin-top: 8px; }
+  .total-label { font-size: 13px; color: var(--cinza); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .total-nps { font-size: 40px; font-weight: 700; }
+  .total-resp { font-size: 13px; color: var(--cinza); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="logo">Hannover <span style="color:var(--dourado)">NPS</span></div>
+    <div class="subtitulo" style="font-size:13px;color:var(--cinza);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:36px;">Painel de Pesquisas</div>
+    <div class="campo">
+      <label>Login</label>
+      <input type="text" id="loginInput" placeholder="Usuário" autocomplete="username">
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <input type="password" id="senhaInput" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') fazerLogin()">
+    </div>
+    <button class="btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-erro" id="loginErro">Login ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- CONTEÚDO PRINCIPAL -->
+<div class="container" id="appContent" style="display:none">
+  <header>
+    <div class="logo">Hannover <span>NPS</span></div>
+    <div class="subtitulo">Painel de Pesquisas</div>
+  </header>
+
+  <div class="card">
+    <h2>Disparar Pesquisas</h2>
+    <p class="desc">Faça upload da planilha com os clientes para enviar as pesquisas NPS via WhatsApp automaticamente.</p>
+    <div class="campo">
+      <label>URL do Backend</label>
+      <input type="text" id="backendUrl" value="https://nps-hannover-backend-production-770d.up.railway.app">
+    </div>
+    <div class="modelo">
+      <p>A planilha deve ter as colunas:</p>
+      <code>nome</code> &nbsp;<code>telefone</code> &nbsp;<code>unidade</code> &nbsp;<code>data_visita</code>
+    </div>
+    <div class="drop-area" id="dropArea" onclick="document.getElementById('fileInput').click()">
+      <div class="icone">📊</div>
+      <p>Clique ou arraste sua planilha aqui</p>
+      <p style="font-size:12px;margin-top:4px;">Excel (.xlsx) ou CSV</p>
+      <div class="arquivo-nome" id="nomeArquivo"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+    <button class="btn" id="btnDisparar" onclick="disparar()" disabled>Enviar Pesquisas</button>
+    <div class="alerta" id="alertaDisparo"></div>
+  </div>
+
+  <div class="card">
+    <h2>Relatório de Resultados</h2>
+    <p class="desc">Filtre por período de visita para ver notas, NPS e comentários organizados por unidade.</p>
+    <div class="campos-linha">
+      <div class="campo" style="margin-bottom:0">
+        <label>Data inicial</label>
+        <input type="date" id="dataInicio">
+      </div>
+      <div class="campo" style="margin-bottom:0">
+        <label>Data final</label>
+        <input type="date" id="dataFim">
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-dourado" onclick="carregarRelatorio()">Ver Relatório</button>
+    </div>
+    <div class="alerta" id="alertaRelatorio"></div>
+    <div id="resultadoRelatorio"></div>
+  </div>
+</div>
+
+<script>
+  // LOGIN
+  const USUARIO = 'Grupohannover';
+  const SENHA   = 'Hannover1914*';
+
+  function fazerLogin() {
+    const u = document.getElementById('loginInput').value.trim();
+    const s = document.getElementById('senhaInput').value;
+    if (u === USUARIO && s === SENHA) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appContent').style.display = 'block';
+      sessionStorage.setItem('nps_auth', '1');
+    } else {
+      document.getElementById('loginErro').style.display = 'block';
+    }
+  }
+
+  // Manter sessão enquanto aba aberta
+  if (sessionStorage.getItem('nps_auth') === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+  }
+
+  // DISPARO
+  const fileInput   = document.getElementById('fileInput');
+  const dropArea    = document.getElementById('dropArea');
+  const nomeArquivo = document.getElementById('nomeArquivo');
+  const btnDisparar = document.getElementById('btnDisparar');
+  let arquivoSelecionado = null;
+
+  const hoje = new Date();
+  const trintaDias = new Date();
+  trintaDias.setDate(hoje.getDate() - 30);
+  document.getElementById('dataFim').value   = hoje.toISOString().split('T')[0];
+  document.getElementById('dataInicio').value = trintaDias.toISOString().split('T')[0];
+
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) selecionarArquivo(e.target.files[0]); });
+  dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
+  dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+  dropArea.addEventListener('drop', e => {
+    e.preventDefault(); dropArea.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) selecionarArquivo(e.dataTransfer.files[0]);
+  });
+
+  function selecionarArquivo(file) {
+    arquivoSelecionado = file;
+    nomeArquivo.textContent = '✅ ' + file.name;
+    btnDisparar.disabled = false;
+  }
+
+  function mostrarAlerta(id, tipo, msg) {
+    const el = document.getElementById(id);
+    el.className = 'alerta ' + tipo;
+    el.innerHTML = msg;
+    el.style.display = 'block';
+  }
+
+  async function disparar() {
+    if (!arquivoSelecionado) return;
+    const url = document.getElementById('backendUrl').value.trim();
+    btnDisparar.disabled = true;
+    btnDisparar.innerHTML = '<span class="loading"></span> Enviando...';
+    mostrarAlerta('alertaDisparo', 'carregando', '⏳ Enviando pesquisas, aguarde...');
+    const formData = new FormData();
+    formData.append('planilha', arquivoSelecionado);
+    try {
+      const res  = await fetch(url + '/disparar', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.sucesso) {
+        mostrarAlerta('alertaDisparo', 'sucesso',
+          `✅ Pesquisas enviadas com sucesso!<br>📤 Enviadas: <strong>${data.enviados}</strong> | ❌ Erros: <strong>${data.erros}</strong>`);
+      } else {
+        mostrarAlerta('alertaDisparo', 'erro', '❌ Erro: ' + (data.erro || 'Falha ao enviar'));
+      }
+    } catch (e) {
+      mostrarAlerta('alertaDisparo', 'erro', '❌ Erro de conexão: ' + e.message);
+    }
+    btnDisparar.innerHTML = 'Enviar Pesquisas';
+    btnDisparar.disabled = false;
+  }
+
+  // RELATÓRIO
+  function normalizarData(val) {
+    if (!val) return null;
+    const s = String(val).split('T')[0];
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) { const [d,m,y] = s.split('/'); return `${y}-${m}-${d}`; }
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s))   { const [d,m,y] = s.split('-'); return `${y}-${m}-${d}`; }
+    return s;
+  }
+
+  function formatarTel(tel) {
+    if (!tel) return '—';
+    const t = String(tel).replace(/\D/g, '');
+    if (t.length === 13) return `+${t.slice(0,2)} (${t.slice(2,4)}) ${t.slice(4,9)}-${t.slice(9)}`;
+    return tel;
+  }
+
+  function formatarDataBR(val) {
+    if (!val) return '—';
+    const d = normalizarData(val);
+    if (!d) return val;
+    return d.split('-').reverse().join('/');
+  }
+
+  async function carregarRelatorio() {
+    const url        = document.getElementById('backendUrl').value.trim();
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim    = document.getElementById('dataFim').value;
+
+    mostrarAlerta('alertaRelatorio', 'carregando', '⏳ Carregando resultados...');
+    document.getElementById('resultadoRelatorio').innerHTML = '';
+
+    try {
+      const res = await fetch(url + '/resultados');
+      let data  = await res.json();
+
+      if (!data || data.length === 0) {
+        mostrarAlerta('alertaRelatorio', 'erro', '📭 Nenhuma resposta registrada ainda.');
+        return;
+      }
+
+      if (dataInicio || dataFim) {
+        data = data.filter(r => {
+          const d = normalizarData(r.data_visita);
+          if (!d) return false;
+          if (dataInicio && d < dataInicio) return false;
+          if (dataFim    && d > dataFim)    return false;
+          return true;
+        });
+      }
+
+      const comNota = data.filter(r => r.nota !== null);
+      if (comNota.length === 0) {
+        mostrarAlerta('alertaRelatorio', 'erro', '📭 Nenhuma nota recebida no período selecionado.');
+        return;
+      }
+
+      document.getElementById('alertaRelatorio').style.display = 'none';
+
+      const unidades = {};
+      for (const r of comNota) {
+        const u = r.unidade || 'Não informada';
+        if (!unidades[u]) unidades[u] = [];
+        unidades[u].push(r);
+      }
+
+      let html = '<div style="margin-top:24px;">';
+
+      for (const [unidade, registros] of Object.entries(unidades)) {
+        const notas      = registros.map(r => r.nota);
+        const total      = notas.length;
+        const n8         = notas.filter(n => n === 8).length;
+        const n9         = notas.filter(n => n === 9).length;
+        const n10        = notas.filter(n => n === 10).length;
+        const promotores = n10;
+        const neutros    = n8 + n9;
+        const detratores = notas.filter(n => n < 8).length;
+        const nps        = (((promotores - detratores) / total) * 100).toFixed(1);
+        const corNps     = parseFloat(nps) >= 75 ? '#16a34a' : parseFloat(nps) >= 50 ? '#ca8a04' : '#dc2626';
+        const comentarios = registros.filter(r => r.comentario && r.comentario.trim() !== '');
+
+        html += `
+          <div class="unidade-bloco">
+            <div class="unidade-header">
+              <div class="unidade-nome">${unidade}</div>
+              <div class="nps-badge" style="color:${corNps}">NPS ${nps}</div>
+            </div>
+            <div class="notas-grid">
+              <div class="nota-box"><div class="nota-label">Nota 8</div><div class="nota-valor" style="color:#6b7280">${n8}</div><div class="nota-pct">${total>0?((n8/total)*100).toFixed(0):0}%</div></div>
+              <div class="nota-box"><div class="nota-label">Nota 9</div><div class="nota-valor" style="color:#c9a84c">${n9}</div><div class="nota-pct">${total>0?((n9/total)*100).toFixed(0):0}%</div></div>
+              <div class="nota-box"><div class="nota-label">Nota 10</div><div class="nota-valor" style="color:#1a3a2a">${n10}</div><div class="nota-pct">${total>0?((n10/total)*100).toFixed(0):0}%</div></div>
+            </div>
+            <div class="pct-grid">
+              <div class="pct-box"><div class="pct-box-label">😊 Promotores</div><div class="pct-box-valor" style="color:#16a34a">${total>0?((promotores/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${promotores} resp.</div></div>
+              <div class="pct-box"><div class="pct-box-label">😐 Neutros</div><div class="pct-box-valor" style="color:#ca8a04">${total>0?((neutros/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${neutros} resp.</div></div>
+              <div class="pct-box"><div class="pct-box-label">😞 Detratores</div><div class="pct-box-valor" style="color:#dc2626">${total>0?((detratores/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${detratores} resp.</div></div>
+            </div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">Total: ${total} respostas</div>
+            <div class="comentarios-section">
+              <div class="comentarios-titulo">💬 Comentários (${comentarios.length})</div>
+              ${comentarios.length === 0
+                ? '<div class="sem-comentarios">Nenhum comentário neste período.</div>'
+                : comentarios.map(r => `
+                  <div class="comentario-item">
+                    <div class="comentario-cliente">${r.nome||'Cliente'} · Nota ${r.nota} · ${r.unidade||''}</div>
+                    <div class="comentario-meta">📅 Visita: ${formatarDataBR(r.data_visita)} &nbsp;·&nbsp; 📱 ${formatarTel(r.telefone)}</div>
+                    <div class="comentario-texto">${r.comentario}</div>
+                  </div>`).join('')
+              }
+            </div>
+          </div>
+          <hr class="divisor-unidade">`;
+      }
+
+      // Total geral
+      const todasNotas = comNota.map(r => r.nota);
+      const totalGeral = todasNotas.length;
+      const promGeral  = todasNotas.filter(n => n === 10).length;
+      const detGeral   = todasNotas.filter(n => n < 8).length;
+      const npsGeral   = (((promGeral - detGeral) / totalGeral) * 100).toFixed(1);
+      const corGeral   = parseFloat(npsGeral) >= 75 ? '#16a34a' : parseFloat(npsGeral) >= 50 ? '#ca8a04' : '#dc2626';
+
+      html += `
+        <div class="total-geral">
+          <div class="total-label">NPS Geral</div>
+          <div class="total-nps" style="color:${corGeral}">${npsGeral}</div>
+          <div class="total-resp">${totalGeral} respostas no total</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+          <button class="btn btn-outline" onclick="exportarPDF()">⬇️ Salvar relatório (PDF)</button>
+          <button class="btn btn-outline" onclick="exportarCSV()">⬇️ Exportar CSV</button>
+        </div>
+      </div>`;
+
+      document.getElementById('resultadoRelatorio').innerHTML = html;
+      window._dadosRelatorio  = comNota;
+      window._unidadesRelatorio = unidades;
+
+    } catch (e) {
+      mostrarAlerta('alertaRelatorio', 'erro', '❌ Erro ao carregar: ' + e.message);
+    }
+  }
+
+  function exportarPDF() {
+    const dados    = window._dadosRelatorio;
+    const unidades = window._unidadesRelatorio;
+    if (!dados || !unidades) return;
+
+    const win = window.open('', '_blank');
+    const dataFiltro = `${document.getElementById('dataInicio').value.split('-').reverse().join('/')} a ${document.getElementById('dataFim').value.split('-').reverse().join('/')}`;
+
+    let html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+    <title>Relatório NPS Hannover</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Inter', sans-serif; background: #f7f4ee; color: #1a3a2a; padding: 40px; }
+      .logo { font-family: 'Playfair Display', serif; font-size: 26px; text-align: center; margin-bottom: 4px; }
+      .logo span { color: #c9a84c; }
+      .subtitulo { text-align: center; font-size: 12px; color: #6b7280; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+      .periodo { text-align: center; font-size: 13px; color: #6b7280; margin-bottom: 32px; }
+      .unidade-bloco { background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 24px; border: 1px solid #e5e0d5; }
+      .unidade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+      .unidade-nome { font-family: 'Playfair Display', serif; font-size: 18px; }
+      .nps-badge { font-size: 20px; font-weight: 700; }
+      .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+      .box { background: #f7f4ee; border-radius: 10px; padding: 12px; text-align: center; }
+      .box-label { font-size: 11px; color: #6b7280; margin-bottom: 6px; }
+      .box-valor { font-size: 20px; font-weight: 700; }
+      .box-pct { font-size: 11px; color: #6b7280; margin-top: 2px; }
+      .total-linha { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+      .comentarios-titulo { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 10px; }
+      .comentario { background: #f7f4ee; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 3px solid #c9a84c; }
+      .comentario-cliente { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+      .comentario-meta { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+      .comentario-texto { font-size: 13px; color: #374151; line-height: 1.5; }
+      .sem-comentarios { font-size: 13px; color: #6b7280; font-style: italic; }
+      .total-geral { background: #fff; border-radius: 14px; padding: 24px; text-align: center; border: 1px solid #e5e0d5; margin-top: 8px; }
+      .total-label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+      .total-nps { font-size: 40px; font-weight: 700; }
+      .total-resp { font-size: 13px; color: #6b7280; margin-top: 4px; }
+      @media print { body { background: #fff; padding: 20px; } }
+    </style></head><body>
+    <div class="logo">Hannover <span>NPS</span></div>
+    <div class="subtitulo">Relatório de Pesquisas</div>
+    <div class="periodo">Período: ${dataFiltro}</div>`;
+
+    for (const [unidade, registros] of Object.entries(unidades)) {
+      const notas      = registros.map(r => r.nota);
+      const total      = notas.length;
+      const n8         = notas.filter(n => n === 8).length;
+      const n9         = notas.filter(n => n === 9).length;
+      const n10        = notas.filter(n => n === 10).length;
+      const promotores = n10;
+      const neutros    = n8 + n9;
+      const detratores = notas.filter(n => n < 8).length;
+      const nps        = (((promotores - detratores) / total) * 100).toFixed(1);
+      const corNps     = parseFloat(nps) >= 75 ? '#16a34a' : parseFloat(nps) >= 50 ? '#ca8a04' : '#dc2626';
+      const comentarios = registros.filter(r => r.comentario && r.comentario.trim() !== '');
+
+      html += `<div class="unidade-bloco">
+        <div class="unidade-header">
+          <div class="unidade-nome">${unidade}</div>
+          <div class="nps-badge" style="color:${corNps}">NPS ${nps}</div>
+        </div>
+        <div class="grid3">
+          <div class="box"><div class="box-label">Nota 8</div><div class="box-valor" style="color:#6b7280">${n8}</div><div class="box-pct">${total>0?((n8/total)*100).toFixed(0):0}%</div></div>
+          <div class="box"><div class="box-label">Nota 9</div><div class="box-valor" style="color:#c9a84c">${n9}</div><div class="box-pct">${total>0?((n9/total)*100).toFixed(0):0}%</div></div>
+          <div class="box"><div class="box-label">Nota 10</div><div class="box-valor" style="color:#1a3a2a">${n10}</div><div class="box-pct">${total>0?((n10/total)*100).toFixed(0):0}%</div></div>
+        </div>
+        <div class="grid3" style="margin-bottom:12px;">
+          <div class="box"><div class="box-label">😊 Promotores</div><div class="box-valor" style="color:#16a34a;font-size:16px;">${total>0?((promotores/total)*100).toFixed(1):0}%</div><div class="box-pct">${promotores} resp.</div></div>
+          <div class="box"><div class="box-label">😐 Neutros</div><div class="box-valor" style="color:#ca8a04;font-size:16px;">${total>0?((neutros/total)*100).toFixed(1):0}%</div><div class="box-pct">${neutros} resp.</div></div>
+          <div class="box"><div class="box-label">😞 Detratores</div><div class="box-valor" style="color:#dc2626;font-size:16px;">${total>0?((detratores/total)*100).toFixed(1):0}%</div><div class="box-pct">${detratores} resp.</div></div>
+        </div>
+        <div class="total-linha">Total: ${total} respostas</div>
+        <div class="comentarios-titulo">💬 Comentários (${comentarios.length})</div>
+        ${comentarios.length === 0
+          ? '<div class="sem-comentarios">Nenhum comentário neste período.</div>'
+          : comentarios.map(r => `<div class="comentario">
+              <div class="comentario-cliente">${r.nome||'Cliente'} · Nota ${r.nota} · ${r.unidade||''}</div>
+              <div class="comentario-meta">📅 Visita: ${formatarDataBR(r.data_visita)} · 📱 ${formatarTel(r.telefone)}</div>
+              <div class="comentario-texto">${r.comentario}</div>
+            </div>`).join('')
+        }
+      </div>`;
+    }
+
+    const todasNotas = dados.map(r => r.nota);
+    const totalGeral = todasNotas.length;
+    const promGeral  = todasNotas.filter(n => n === 10).length;
+    const detGeral   = todasNotas.filter(n => n < 8).length;
+    const npsGeral   = (((promGeral - detGeral) / totalGeral) * 100).toFixed(1);
+    const corGeral   = parseFloat(npsGeral) >= 75 ? '#16a34a' : parseFloat(npsGeral) >= 50 ? '#ca8a04' : '#dc2626';
+
+    html += `<div class="total-geral">
+      <div class="total-label">NPS Geral</div>
+      <div class="total-nps" style="color:${corGeral}">${npsGeral}</div>
+      <div class="total-resp">${totalGeral} respostas no total</div>
+    </div>
+
+    </body></html>`;
+
+    win.document.write(html);
+    win.document.close();
+  }
+
+  function exportarCSV() {
+    const dados     = window._dadosRelatorio;
+    const unidades  = window._unidadesRelatorio;
+    if (!dados || dados.length === 0) return;
+
+    const linhas = [];
+
+    for (const [unidade, registros] of Object.entries(unidades)) {
+      const notas      = registros.map(r => r.nota);
+      const total      = notas.length;
+      const n8         = notas.filter(n => n === 8).length;
+      const n9         = notas.filter(n => n === 9).length;
+      const n10        = notas.filter(n => n === 10).length;
+      const promotores = n10;
+      const neutros    = n8 + n9;
+      const detratores = notas.filter(n => n < 8).length;
+      const nps        = (((promotores - detratores) / total) * 100).toFixed(1);
+
+      // Cabeçalho da unidade
+      linhas.push([`"=== ${unidade} ==="`, `"NPS: ${nps}"`, `"Total: ${total} respostas"`, '', '', '']);
+      linhas.push(['"Promotores (Nota 10)"', `"${promotores} resp."`, `"${total>0?((promotores/total)*100).toFixed(1):0}%"`, '', '', '']);
+      linhas.push(['"Neutros (Notas 8-9)"',  `"${neutros} resp."`,    `"${total>0?((neutros/total)*100).toFixed(1):0}%"`,    '', '', '']);
+      linhas.push(['"Detratores (<8)"',       `"${detratores} resp."`, `"${total>0?((detratores/total)*100).toFixed(1):0}%"`, '', '', '']);
+      linhas.push(['"Nota 8"', `"${n8}"`, '"Nota 9"', `"${n9}"`, '"Nota 10"', `"${n10}"`]);
+      linhas.push(['', '', '', '', '', '']);
+
+      // Cabeçalho dos feedbacks
+      linhas.push(['"Nome"', '"Telefone"', '"Unidade"', '"Nota"', '"Data da Visita"', '"Comentário"']);
+
+      for (const r of registros) {
+        linhas.push([
+          `"${r.nome||''}"`,
+          `"${r.telefone||''}"`,
+          `"${r.unidade||''}"`,
+          `"${r.nota!==null&&r.nota!==undefined?r.nota:''}"`,
+          `"${formatarDataBR(r.data_visita)}"`,
+          `"${(r.comentario||'').replace(/"/g,'""')}"`
+        ]);
+      }
+      linhas.push(['', '', '', '', '', '']);
+      linhas.push(['', '', '', '', '', '']);
+    }
+
+    const csv  = linhas.map(l => l.join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `relatorio-nps-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>
