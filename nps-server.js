@@ -137,6 +137,22 @@ app.post('/webhook', async (req, res) => {
     const entry = req.body?.entry?.[0];
     const changes = entry?.changes?.[0];
     const value = changes?.value;
+
+    // Registra o status das mensagens que VOCÊ enviou (accepted / sent / delivered / read / failed)
+    // É AQUI que a Meta avisa o motivo quando a mensagem NÃO chega no cliente.
+    if (value?.statuses) {
+      for (const s of value.statuses) {
+        console.log(`📊 STATUS ${s.id}: ${s.status} → ${s.recipient_id}`);
+        if (s.errors) {
+          for (const e of s.errors) {
+            console.log(`❌ ERRO ${e.code}: ${e.title} — ${e.message || ''}`);
+            if (e.error_data?.details) console.log(`   Detalhe: ${e.error_data.details}`);
+          }
+        }
+      }
+      return;
+    }
+
     const messages = value?.messages;
     if (!messages || messages.length === 0) return;
 
