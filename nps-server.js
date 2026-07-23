@@ -196,16 +196,27 @@ app.post('/webhook', async (req, res) => {
 
     console.log('Registro encontrado:', envio.id, 'etapa:', envio.etapa, 'nota:', envio.nota);
 
-    const notaTexto = textoRecebido.includes('Nota 8') ? '8' :
-                      textoRecebido.includes('Nota 9') ? '9' :
-                      textoRecebido.includes('Nota 10') ? '10' : null;
-    const notaMatch = textoRecebido.match(/\b(10|[89])\b/);
-    const nota = notaTexto ? parseInt(notaTexto) : (notaMatch ? parseInt(notaMatch[1]) : null);
+    const notaBtnMatch = textoRecebido.match(/Nota\s*(10|[1-9])/i);
+    const notaMatch = textoRecebido.match(/\b(10|[1-9])\b/);
+    const nota = notaBtnMatch ? parseInt(notaBtnMatch[1]) : (notaMatch ? parseInt(notaMatch[1]) : null);
 
     console.log('Nota extraída:', nota, 'etapa atual:', envio.etapa);
 
+    const templatesPorNota = {
+      1: 'se_responder_1',
+      2: 'se_responder_2',
+      3: 'se_responder_3',
+      4: 'se_responde_',
+      5: 'se_responder_5',
+      6: 'se_responder_6',
+      7: 'se_responder_7',
+      8: 'se_responde_8',
+      9: 'se_responder_9',
+      10: 'se_responder_10_atualizado'
+    };
+
     if (envio.etapa === 'pesquisa_inicial' && nota !== null) {
-      const novaEtapa = (nota === 8 || nota === 9) ? 'aguardando_comentario' : 'respondido';
+      const novaEtapa = nota === 10 ? 'respondido' : 'aguardando_comentario';
 
       const { error: erroUpdate } = await supabase.from('nps_envios')
         .update({ nota, etapa: novaEtapa, respondido_em: new Date().toISOString() })
@@ -214,12 +225,9 @@ app.post('/webhook', async (req, res) => {
       if (erroUpdate) console.error('Erro ao salvar nota:', erroUpdate);
       else console.log('Nota salva:', nota, 'nova etapa:', novaEtapa);
 
-      if (nota === 10) {
-        await enviarTemplate(telefone, 'se_responder_10', [envio.nome || 'cliente']);
-      } else if (nota === 9) {
-        await enviarTemplate(telefone, 'se_responder_8_ou_9', [envio.nome || 'cliente']);
-      } else if (nota === 8) {
-        await enviarTemplate(telefone, 'se_responde_8', [envio.nome || 'cliente']);
+      const template = templatesPorNota[nota];
+      if (template) {
+        await enviarTemplate(telefone, template, [envio.nome || 'cliente']);
       }
       return;
     }
@@ -267,7 +275,7 @@ app.post('/disparar', upload.single('planilha'), async (req, res) => {
           continue;
         }
 
-        const resultado = await enviarTemplate(telefone, 'pesquisa_inicial', [nome]);
+        const resultado = await enviarTemplate(telefone, 'pesquisa_inicial_atualizada', [nome]);
         if (resultado.error) {
           console.error('Erro Meta para', telefone, resultado.error);
           erros++;
