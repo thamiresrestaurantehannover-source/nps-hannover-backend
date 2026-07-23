@@ -204,16 +204,16 @@ app.post('/webhook', async (req, res) => {
     console.log('Nota extraída:', nota, 'etapa atual:', envio.etapa);
 
     const templatesPorNota = {
-      1: 'se_responder_1_a_6',
-      2: 'se_responder_1_a_6',
-      3: 'se_responder_1_a_6',
-      4: 'se_responder_1_a_6',
-      5: 'se_responder_1_a_6',
-      6: 'se_responder_1_a_6',
-      7: 'se_responder_7_ou_8',
-      8: 'se_responder_7_ou_8',
+      1: 'se_responder_1',
+      2: 'se_responder_2',
+      3: 'se_responder_3',
+      4: 'se_responde_',
+      5: 'se_responder_5',
+      6: 'se_responder_6',
+      7: 'se_responder_7',
+      8: 'se_responde_8',
       9: 'se_responder_9',
-      10: 'se_responder_10'
+      10: 'se_responder_10_atualizado'
     };
 
     if (envio.etapa === 'pesquisa_inicial' && nota !== null) {
