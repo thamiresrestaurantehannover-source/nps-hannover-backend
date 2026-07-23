@@ -15,7 +15,7 @@ const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
 const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || 'hannover_nps_2026';
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { transport: ws }
@@ -92,27 +92,28 @@ async function gerarRelatorio() {
 
   for (const [unidade, notas] of Object.entries(unidades)) {
     const total = notas.length;
-    const promotores = notas.filter(n => n === 10).length;
-    const neutros = notas.filter(n => n === 8 || n === 9).length;
-    const detratores = notas.filter(n => n < 8).length;
-    const count8 = notas.filter(n => n === 8).length;
-    const count9 = notas.filter(n => n === 9).length;
-    const count10 = notas.filter(n => n === 10).length;
+    const promotores = notas.filter(n => n === 9 || n === 10).length;
+    const neutros = notas.filter(n => n === 7 || n === 8).length;
+    const detratores = notas.filter(n => n <= 6).length;
+    const distribuicao = Array.from({ length: 11 }, (_, i) => i).map(n => {
+      const count = notas.filter(nota => nota === n).length;
+      return `├ Nota ${n}: ${count}`;
+    }).join('\n');
     const nps = (((promotores - detratores) / total) * 100).toFixed(1);
 
     relatorio += `🏠 *${unidade}*\n`;
     relatorio += `Total: ${total} respostas\n`;
-    relatorio += `├ Nota 8: ${count8}\n├ Nota 9: ${count9}\n└ Nota 10: ${count10}\n\n`;
-    relatorio += `😊 Promotores (10): ${promotores} (${((promotores/total)*100).toFixed(1)}%)\n`;
-    relatorio += `😐 Neutros (8-9): ${neutros} (${((neutros/total)*100).toFixed(1)}%)\n`;
-    relatorio += `😞 Detratores (<8): ${detratores} (${((detratores/total)*100).toFixed(1)}%)\n`;
+    relatorio += `${distribuicao}\n\n`;
+    relatorio += `😊 Promotores (9-10): ${promotores} (${((promotores/total)*100).toFixed(1)}%)\n`;
+    relatorio += `😐 Neutros (7-8): ${neutros} (${((neutros/total)*100).toFixed(1)}%)\n`;
+    relatorio += `😞 Detratores (0-6): ${detratores} (${((detratores/total)*100).toFixed(1)}%)\n`;
     relatorio += `⭐ NPS Score: *${nps}*\n\n─────────────────\n\n`;
   }
 
   const todasNotas = data.map(r => r.nota);
   const totalGeral = todasNotas.length;
-  const promGeral = todasNotas.filter(n => n === 10).length;
-  const detGeral = todasNotas.filter(n => n < 8).length;
+  const promGeral = todasNotas.filter(n => n === 9 || n === 10).length;
+  const detGeral = todasNotas.filter(n => n <= 6).length;
   const npsGeral = (((promGeral - detGeral) / totalGeral) * 100).toFixed(1);
   relatorio += `📈 *TOTAL GERAL*\nRespostas: ${totalGeral}\nNPS Geral: *${npsGeral}*`;
 
@@ -196,16 +197,27 @@ app.post('/webhook', async (req, res) => {
 
     console.log('Registro encontrado:', envio.id, 'etapa:', envio.etapa, 'nota:', envio.nota);
 
-    const notaTexto = textoRecebido.includes('Nota 8') ? '8' :
-                      textoRecebido.includes('Nota 9') ? '9' :
-                      textoRecebido.includes('Nota 10') ? '10' : null;
-    const notaMatch = textoRecebido.match(/\b(10|[89])\b/);
-    const nota = notaTexto ? parseInt(notaTexto) : (notaMatch ? parseInt(notaMatch[1]) : null);
+    const notaTexto = textoRecebido.match(/Nota\s*(10|[1-9])\b/i);
+    const notaMatch = textoRecebido.match(/\b(10|[1-9])\b/);
+    const nota = notaTexto ? parseInt(notaTexto[1]) : (notaMatch ? parseInt(notaMatch[1]) : null);
 
     console.log('Nota extraída:', nota, 'etapa atual:', envio.etapa);
 
+    const templatesPorNota = {
+      1: 'se_responder_1_a_6',
+      2: 'se_responder_1_a_6',
+      3: 'se_responder_1_a_6',
+      4: 'se_responder_1_a_6',
+      5: 'se_responder_1_a_6',
+      6: 'se_responder_1_a_6',
+      7: 'se_responder_7_ou_8',
+      8: 'se_responder_7_ou_8',
+      9: 'se_responder_9',
+      10: 'se_responder_10'
+    };
+
     if (envio.etapa === 'pesquisa_inicial' && nota !== null) {
-      const novaEtapa = (nota === 8 || nota === 9) ? 'aguardando_comentario' : 'respondido';
+      const novaEtapa = nota === 10 ? 'respondido' : 'aguardando_comentario';
 
       const { error: erroUpdate } = await supabase.from('nps_envios')
         .update({ nota, etapa: novaEtapa, respondido_em: new Date().toISOString() })
@@ -214,12 +226,9 @@ app.post('/webhook', async (req, res) => {
       if (erroUpdate) console.error('Erro ao salvar nota:', erroUpdate);
       else console.log('Nota salva:', nota, 'nova etapa:', novaEtapa);
 
-      if (nota === 10) {
-        await enviarTemplate(telefone, 'se_responder_10', [envio.nome || 'cliente']);
-      } else if (nota === 9) {
-        await enviarTemplate(telefone, 'se_responder_8_ou_9', [envio.nome || 'cliente']);
-      } else if (nota === 8) {
-        await enviarTemplate(telefone, 'se_responde_8', [envio.nome || 'cliente']);
+      const template = templatesPorNota[nota];
+      if (template) {
+        await enviarTemplate(telefone, template, [envio.nome || 'cliente']);
       }
       return;
     }
@@ -267,7 +276,7 @@ app.post('/disparar', upload.single('planilha'), async (req, res) => {
           continue;
         }
 
-        const resultado = await enviarTemplate(telefone, 'pesquisa_inicial', [nome]);
+        const resultado = await enviarTemplate(telefone, 'pesquisa_inicial_atualizada', [nome]);
         if (resultado.error) {
           console.error('Erro Meta para', telefone, resultado.error);
           erros++;
