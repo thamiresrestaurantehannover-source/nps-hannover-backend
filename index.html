@@ -192,9 +192,6 @@
         <option value="Moema">Moema</option>
         <option value="Tatuapé">Tatuapé</option>
         <option value="Perdizes">Perdizes</option>
-        <option value="Fondue Moema">Fondue Moema</option>
-        <option value="Fondue Tatuapé">Fondue Tatuapé</option>
-        <option value="Fondue Perdizes">Fondue Perdizes</option>
       </select>
     </div>
     <div style="margin-top:16px;" class="no-print">
@@ -338,6 +335,19 @@
       let data  = await res.json();
 
       if (!data || data.length === 0) {
+        mostrarAlerta('alertaRelatorio', 'erro', '📭 Nenhuma resposta registrada ainda.');
+        return;
+      }
+
+      // Normaliza nomes de unidade e mantém apenas as 3 casas (esconde fondues)
+      const UNIDADES_VISIVEIS = ['Moema', 'Tatuapé', 'Perdizes'];
+      data = data.map(r => {
+        let u = (r.unidade || '').trim();
+        if (u === 'Tatuape') u = 'Tatuapé';   // junta sem-acento com acento
+        return { ...r, unidade: u };
+      }).filter(r => UNIDADES_VISIVEIS.includes(r.unidade));
+
+      if (data.length === 0) {
         mostrarAlerta('alertaRelatorio', 'erro', '📭 Nenhuma resposta registrada ainda.');
         return;
       }
