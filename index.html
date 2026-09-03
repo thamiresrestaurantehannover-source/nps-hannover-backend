@@ -80,6 +80,12 @@
   .comentario-texto { font-size: 13px; color: #374151; line-height: 1.5; }
   .sem-comentarios { font-size: 13px; color: var(--cinza); font-style: italic; }
 
+  /* Status de envio */
+  .envio-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .envio-box { background: var(--creme); border-radius: 10px; padding: 10px; text-align: center; }
+  .envio-label { font-size: 11px; color: var(--cinza); margin-bottom: 4px; }
+  .envio-valor { font-size: 18px; font-weight: 700; }
+
   /* Distribuição de notas */
   .dist-section { margin-top: 4px; margin-bottom: 18px; }
   .dist-titulo { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--cinza); margin-bottom: 12px; }
@@ -363,6 +369,14 @@
 
       document.getElementById('alertaRelatorio').style.display = 'none';
 
+      // Envios totais por unidade (com e sem nota) — para enviadas/ignoradas
+      const enviosPorUnidade = {};
+      for (const r of data) {
+        const u = r.unidade || 'Não informada';
+        if (!enviosPorUnidade[u]) enviosPorUnidade[u] = [];
+        enviosPorUnidade[u].push(r);
+      }
+
       const unidades = {};
       for (const r of comNota) {
         const u = r.unidade || 'Não informada';
@@ -381,6 +395,12 @@
         const nps        = (((promotores - detratores) / total) * 100).toFixed(1);
         const corNps     = parseFloat(nps) >= 75 ? '#16a34a' : parseFloat(nps) >= 50 ? '#ca8a04' : '#dc2626';
         const comentarios = registros.filter(r => r.comentario && r.comentario.trim() !== '');
+
+        // Envio: enviadas / respondidas / ignoradas
+        const enviadas    = (enviosPorUnidade[unidade] || []).length;
+        const respondidas = total;
+        const ignoradas   = enviadas - respondidas;
+        const taxaResp    = enviadas > 0 ? ((respondidas / enviadas) * 100).toFixed(1) : '0.0';
 
         // Distribuição das notas 1..10
         const dist = {}; for (let i = 1; i <= 10; i++) dist[i] = 0;
@@ -409,6 +429,12 @@
             <div class="unidade-header">
               <div class="unidade-nome">${unidade}</div>
               <div class="nps-badge" style="color:${corNps}">NPS ${nps}</div>
+            </div>
+            <div class="envio-grid">
+              <div class="envio-box"><div class="envio-label">📤 Enviadas</div><div class="envio-valor">${enviadas}</div></div>
+              <div class="envio-box"><div class="envio-label">✅ Respondidas</div><div class="envio-valor" style="color:#16a34a">${respondidas}</div></div>
+              <div class="envio-box"><div class="envio-label">⏳ Ignoradas</div><div class="envio-valor" style="color:#9ca3af">${ignoradas}</div></div>
+              <div class="envio-box"><div class="envio-label">📈 Taxa resposta</div><div class="envio-valor" style="color:${parseFloat(taxaResp)>=30?'#16a34a':'#ca8a04'}">${taxaResp}%</div></div>
             </div>
             <div class="pct-grid">
               <div class="pct-box"><div class="pct-box-label">😊 Promotores (9-10)</div><div class="pct-box-valor" style="color:#16a34a">${total>0?((promotores/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${promotores} resp.</div></div>
@@ -451,11 +477,16 @@
       const npsGeral   = (((promGeral - detGeral) / totalGeral) * 100).toFixed(1);
       const corGeral   = parseFloat(npsGeral) >= 75 ? '#16a34a' : parseFloat(npsGeral) >= 50 ? '#ca8a04' : '#dc2626';
 
+      // Envio geral
+      const enviadasGeral   = data.length;
+      const ignoradasGeral  = enviadasGeral - totalGeral;
+      const taxaGeral       = enviadasGeral > 0 ? ((totalGeral / enviadasGeral) * 100).toFixed(1) : '0.0';
+
       html += `
         <div class="total-geral">
           <div class="total-label">${unidadeSel ? 'NPS — ' + unidadeSel : 'NPS Geral'}</div>
           <div class="total-nps" style="color:${corGeral}">${npsGeral}</div>
-          <div class="total-resp">${totalGeral} respostas no total</div>
+          <div class="total-resp">${totalGeral} respostas de ${enviadasGeral} enviadas · ${ignoradasGeral} ignoradas · ${taxaGeral}% de resposta</div>
         </div>
       </div>`;
 
