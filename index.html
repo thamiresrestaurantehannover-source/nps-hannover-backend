@@ -23,7 +23,8 @@
   .card p.desc { font-size: 14px; color: var(--cinza); margin-bottom: 24px; line-height: 1.6; }
   .campo { margin-bottom: 16px; }
   .campo label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--verde); letter-spacing: 0.3px; }
-  .campo input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--borda); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; color: var(--verde); background: var(--creme); transition: border-color 0.2s; outline: none; }
+  .campo input, .campo select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--borda); border-radius: 10px; font-size: 14px; font-family: 'Inter', sans-serif; color: var(--verde); background: var(--creme); transition: border-color 0.2s; outline: none; }
+  .campo select:focus { border-color: var(--dourado); }
   .campo input:focus { border-color: var(--dourado); }
   .campos-linha { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
   .drop-area { border: 2px dashed var(--borda); border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--creme); margin-bottom: 20px; }
@@ -78,11 +79,42 @@
   .comentario-meta { font-size: 11px; color: var(--cinza); margin-bottom: 6px; }
   .comentario-texto { font-size: 13px; color: #374151; line-height: 1.5; }
   .sem-comentarios { font-size: 13px; color: var(--cinza); font-style: italic; }
+
+  /* Distribuição de notas */
+  .dist-section { margin-top: 4px; margin-bottom: 18px; }
+  .dist-titulo { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--cinza); margin-bottom: 12px; }
+  .dist-bars { display: flex; align-items: flex-end; gap: 5px; height: 120px; }
+  .dist-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .dist-cnt { font-size: 11px; color: var(--cinza); margin-bottom: 4px; font-weight: 600; }
+  .dist-bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 2px; }
+  .dist-lab { font-size: 11px; color: var(--cinza); margin-top: 6px; }
+
+  /* Lista completa de respostas */
+  .respostas-section { margin-top: 16px; }
+  .respostas-titulo { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--cinza); margin-bottom: 10px; }
+  .resp-tabela { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .resp-tabela th, .resp-tabela td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--borda); vertical-align: top; }
+  .resp-tabela th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cinza); font-weight: 600; }
+  .resp-tabela td.rt-nota { text-align: center; width: 40px; }
+  .resp-tabela td.rt-tel { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .resp-pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 700; color: #fff; }
+  .resp-comentario { color: #374151; white-space: pre-wrap; }
+  .resp-vazio { color: #9ca3af; }
+
   .divisor-unidade { border: none; border-top: 1px solid var(--borda); margin: 24px 0; }
   .total-geral { background: var(--creme); border-radius: 12px; padding: 20px; text-align: center; margin-top: 8px; }
   .total-label { font-size: 13px; color: var(--cinza); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
   .total-nps { font-size: 40px; font-weight: 700; }
   .total-resp { font-size: 13px; color: var(--cinza); margin-top: 4px; }
+  #botoesRelatorio .btn { width: auto; flex: 1; }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    .no-print { display: none !important; }
+    .card { border: none; padding: 0; margin-bottom: 0; }
+    .unidade-bloco { page-break-inside: avoid; }
+    header { margin-bottom: 24px; }
+  }
 </style>
 </head>
 <body>
@@ -112,7 +144,7 @@
     <div class="subtitulo">Painel de Pesquisas</div>
   </header>
 
-  <div class="card">
+  <div class="card no-print">
     <h2>Disparar Pesquisas</h2>
     <p class="desc">Faça upload da planilha com os clientes para enviar as pesquisas NPS via WhatsApp automaticamente.</p>
     <div class="campo">
@@ -137,7 +169,7 @@
   <div class="card">
     <h2>Relatório de Resultados</h2>
     <p class="desc">Filtre por período de visita para ver notas, NPS e comentários organizados por unidade.</p>
-    <div class="campos-linha">
+    <div class="campos-linha no-print">
       <div class="campo" style="margin-bottom:0">
         <label>Data inicial</label>
         <input type="date" id="dataInicio">
@@ -147,11 +179,27 @@
         <input type="date" id="dataFim">
       </div>
     </div>
-    <div style="margin-top:16px;">
+    <div class="campo no-print" style="margin-top:16px;margin-bottom:0">
+      <label>Unidade</label>
+      <select id="filtroUnidade">
+        <option value="">Todas as unidades</option>
+        <option value="Moema">Moema</option>
+        <option value="Tatuapé">Tatuapé</option>
+        <option value="Perdizes">Perdizes</option>
+        <option value="Fondue Moema">Fondue Moema</option>
+        <option value="Fondue Tatuapé">Fondue Tatuapé</option>
+        <option value="Fondue Perdizes">Fondue Perdizes</option>
+      </select>
+    </div>
+    <div style="margin-top:16px;" class="no-print">
       <button class="btn btn-dourado" onclick="carregarRelatorio()">Ver Relatório</button>
     </div>
-    <div class="alerta" id="alertaRelatorio"></div>
+    <div class="alerta no-print" id="alertaRelatorio"></div>
     <div id="resultadoRelatorio"></div>
+    <div id="botoesRelatorio" class="no-print" style="display:none; gap:10px; margin-top:4px;">
+      <button class="btn btn-outline" style="margin-top:8px;" onclick="exportarCSV()">⬇️ Exportar (.csv)</button>
+      <button class="btn btn-outline" style="margin-top:8px;" onclick="salvarPDF()" id="btnPDF">🖨️ Salvar em PDF</button>
+    </div>
   </div>
 </div>
 
@@ -259,10 +307,22 @@
     return d.split('-').reverse().join('/');
   }
 
+  function atualizarOpcoesUnidade(data, manter) {
+    const sel = document.getElementById('filtroUnidade');
+    const encontradas = [...new Set(data.map(r => r.unidade || 'Não informada'))].sort();
+    const atual = manter || sel.value;
+    sel.innerHTML = '<option value="">Todas as unidades</option>' +
+      encontradas.map(u => `<option value="${u}">${u}</option>`).join('');
+    // preserva a seleção se ainda existir
+    if (atual && encontradas.includes(atual)) sel.value = atual;
+    else sel.value = '';
+  }
+
   async function carregarRelatorio() {
     const url        = document.getElementById('backendUrl').value.trim();
     const dataInicio = document.getElementById('dataInicio').value;
     const dataFim    = document.getElementById('dataFim').value;
+    const unidadeSel = document.getElementById('filtroUnidade').value;
 
     mostrarAlerta('alertaRelatorio', 'carregando', '⏳ Carregando resultados...');
     document.getElementById('resultadoRelatorio').innerHTML = '';
@@ -276,6 +336,9 @@
         return;
       }
 
+      // Preenche o seletor de unidades com as que existem nos dados (mantém a seleção atual)
+      atualizarOpcoesUnidade(data, unidadeSel);
+
       if (dataInicio || dataFim) {
         data = data.filter(r => {
           const d = normalizarData(r.data_visita);
@@ -286,9 +349,15 @@
         });
       }
 
+      if (unidadeSel) {
+        data = data.filter(r => (r.unidade || 'Não informada') === unidadeSel);
+      }
+
       const comNota = data.filter(r => r.nota !== null);
       if (comNota.length === 0) {
-        mostrarAlerta('alertaRelatorio', 'erro', '📭 Nenhuma nota recebida no período selecionado.');
+        mostrarAlerta('alertaRelatorio', 'erro', unidadeSel
+          ? `📭 Nenhuma nota para ${unidadeSel} no período selecionado.`
+          : '📭 Nenhuma nota recebida no período selecionado.');
         return;
       }
 
@@ -306,15 +375,34 @@
       for (const [unidade, registros] of Object.entries(unidades)) {
         const notas      = registros.map(r => r.nota);
         const total      = notas.length;
-        const n8         = notas.filter(n => n === 8).length;
-        const n9         = notas.filter(n => n === 9).length;
-        const n10        = notas.filter(n => n === 10).length;
-        const promotores = n10;
-        const neutros    = n8 + n9;
-        const detratores = notas.filter(n => n < 8).length;
+        const promotores = notas.filter(n => n === 9 || n === 10).length;
+        const neutros    = notas.filter(n => n === 7 || n === 8).length;
+        const detratores = notas.filter(n => n <= 6).length;
         const nps        = (((promotores - detratores) / total) * 100).toFixed(1);
         const corNps     = parseFloat(nps) >= 75 ? '#16a34a' : parseFloat(nps) >= 50 ? '#ca8a04' : '#dc2626';
         const comentarios = registros.filter(r => r.comentario && r.comentario.trim() !== '');
+
+        // Distribuição das notas 1..10
+        const dist = {}; for (let i = 1; i <= 10; i++) dist[i] = 0;
+        notas.forEach(n => { if (n >= 1 && n <= 10) dist[n]++; });
+        const maxDist = Math.max(1, ...Object.values(dist));
+        const corNota = n => (n >= 9 ? '#16a34a' : n >= 7 ? '#ca8a04' : '#dc2626');
+        let distHtml = '';
+        for (let i = 1; i <= 10; i++) {
+          const h = Math.round(dist[i] / maxDist * 100);
+          distHtml += `<div class="dist-col"><div class="dist-cnt">${dist[i] || ''}</div><div class="dist-bar" style="height:${h}%;background:${corNota(i)}"></div><div class="dist-lab">${i}</div></div>`;
+        }
+
+        // Lista completa de respostas (ordenada por nota crescente, piores primeiro)
+        const registrosOrdenados = [...registros].sort((a, b) => a.nota - b.nota);
+        const linhasResp = registrosOrdenados.map(r => `
+                  <tr>
+                    <td>${formatarDataBR(r.data_visita)}</td>
+                    <td>${r.nome || '—'}</td>
+                    <td class="rt-tel">${formatarTel(r.telefone)}</td>
+                    <td class="rt-nota"><span class="resp-pill" style="background:${corNota(r.nota)}">${r.nota}</span></td>
+                    <td class="${r.comentario && r.comentario.trim() ? 'resp-comentario' : 'resp-vazio'}">${r.comentario && r.comentario.trim() ? r.comentario : '—'}</td>
+                  </tr>`).join('');
 
         html += `
           <div class="unidade-bloco">
@@ -322,17 +410,23 @@
               <div class="unidade-nome">${unidade}</div>
               <div class="nps-badge" style="color:${corNps}">NPS ${nps}</div>
             </div>
-            <div class="notas-grid">
-              <div class="nota-box"><div class="nota-label">Nota 8</div><div class="nota-valor" style="color:#6b7280">${n8}</div><div class="nota-pct">${total>0?((n8/total)*100).toFixed(0):0}%</div></div>
-              <div class="nota-box"><div class="nota-label">Nota 9</div><div class="nota-valor" style="color:#c9a84c">${n9}</div><div class="nota-pct">${total>0?((n9/total)*100).toFixed(0):0}%</div></div>
-              <div class="nota-box"><div class="nota-label">Nota 10</div><div class="nota-valor" style="color:#1a3a2a">${n10}</div><div class="nota-pct">${total>0?((n10/total)*100).toFixed(0):0}%</div></div>
-            </div>
             <div class="pct-grid">
-              <div class="pct-box"><div class="pct-box-label">😊 Promotores</div><div class="pct-box-valor" style="color:#16a34a">${total>0?((promotores/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${promotores} resp.</div></div>
-              <div class="pct-box"><div class="pct-box-label">😐 Neutros</div><div class="pct-box-valor" style="color:#ca8a04">${total>0?((neutros/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${neutros} resp.</div></div>
-              <div class="pct-box"><div class="pct-box-label">😞 Detratores</div><div class="pct-box-valor" style="color:#dc2626">${total>0?((detratores/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${detratores} resp.</div></div>
+              <div class="pct-box"><div class="pct-box-label">😊 Promotores (9-10)</div><div class="pct-box-valor" style="color:#16a34a">${total>0?((promotores/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${promotores} resp.</div></div>
+              <div class="pct-box"><div class="pct-box-label">😐 Neutros (7-8)</div><div class="pct-box-valor" style="color:#ca8a04">${total>0?((neutros/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${neutros} resp.</div></div>
+              <div class="pct-box"><div class="pct-box-label">😞 Detratores (0-6)</div><div class="pct-box-valor" style="color:#dc2626">${total>0?((detratores/total)*100).toFixed(1):0}%</div><div class="pct-box-resp">${detratores} resp.</div></div>
             </div>
             <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">Total: ${total} respostas</div>
+            <div class="dist-section">
+              <div class="dist-titulo">📊 Distribuição das notas</div>
+              <div class="dist-bars">${distHtml}</div>
+            </div>
+            <div class="respostas-section">
+              <div class="respostas-titulo">📋 Todas as respostas (${total})</div>
+              <table class="resp-tabela">
+                <thead><tr><th>Data</th><th>Cliente</th><th>Telefone</th><th>Nota</th><th>Comentário</th></tr></thead>
+                <tbody>${linhasResp}</tbody>
+              </table>
+            </div>
             <div class="comentarios-section">
               <div class="comentarios-titulo">💬 Comentários (${comentarios.length})</div>
               ${comentarios.length === 0
@@ -352,134 +446,28 @@
       // Total geral
       const todasNotas = comNota.map(r => r.nota);
       const totalGeral = todasNotas.length;
-      const promGeral  = todasNotas.filter(n => n === 10).length;
-      const detGeral   = todasNotas.filter(n => n < 8).length;
+      const promGeral  = todasNotas.filter(n => n === 9 || n === 10).length;
+      const detGeral   = todasNotas.filter(n => n <= 6).length;
       const npsGeral   = (((promGeral - detGeral) / totalGeral) * 100).toFixed(1);
       const corGeral   = parseFloat(npsGeral) >= 75 ? '#16a34a' : parseFloat(npsGeral) >= 50 ? '#ca8a04' : '#dc2626';
 
       html += `
         <div class="total-geral">
-          <div class="total-label">NPS Geral</div>
+          <div class="total-label">${unidadeSel ? 'NPS — ' + unidadeSel : 'NPS Geral'}</div>
           <div class="total-nps" style="color:${corGeral}">${npsGeral}</div>
           <div class="total-resp">${totalGeral} respostas no total</div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
-          <button class="btn btn-outline" onclick="exportarPDF()">⬇️ Exportar PDF</button>
-          <button class="btn btn-outline" onclick="exportarCSV()">⬇️ Exportar CSV</button>
         </div>
       </div>`;
 
       document.getElementById('resultadoRelatorio').innerHTML = html;
+      document.getElementById('botoesRelatorio').style.display = 'flex';
       window._dadosRelatorio  = comNota;
       window._unidadesRelatorio = unidades;
+      window._periodoRelatorio = { inicio: document.getElementById('dataInicio').value, fim: document.getElementById('dataFim').value, unidade: unidadeSel };
 
     } catch (e) {
       mostrarAlerta('alertaRelatorio', 'erro', '❌ Erro ao carregar: ' + e.message);
     }
-  }
-
-  function exportarPDF() {
-    const dados    = window._dadosRelatorio;
-    const unidades = window._unidadesRelatorio;
-    if (!dados || !unidades) return;
-
-    const win = window.open('', '_blank');
-    const dataFiltro = `${document.getElementById('dataInicio').value.split('-').reverse().join('/')} a ${document.getElementById('dataFim').value.split('-').reverse().join('/')}`;
-
-    let html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-    <title>Relatório NPS Hannover</title>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap');
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Inter', sans-serif; background: #f7f4ee; color: #1a3a2a; padding: 40px; }
-      .logo { font-family: 'Playfair Display', serif; font-size: 26px; text-align: center; margin-bottom: 4px; }
-      .logo span { color: #c9a84c; }
-      .subtitulo { text-align: center; font-size: 12px; color: #6b7280; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
-      .periodo { text-align: center; font-size: 13px; color: #6b7280; margin-bottom: 32px; }
-      .unidade-bloco { background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 24px; border: 1px solid #e5e0d5; }
-      .unidade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-      .unidade-nome { font-family: 'Playfair Display', serif; font-size: 18px; }
-      .nps-badge { font-size: 20px; font-weight: 700; }
-      .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-      .box { background: #f7f4ee; border-radius: 10px; padding: 12px; text-align: center; }
-      .box-label { font-size: 11px; color: #6b7280; margin-bottom: 6px; }
-      .box-valor { font-size: 20px; font-weight: 700; }
-      .box-pct { font-size: 11px; color: #6b7280; margin-top: 2px; }
-      .total-linha { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
-      .comentarios-titulo { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 10px; }
-      .comentario { background: #f7f4ee; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 3px solid #c9a84c; }
-      .comentario-cliente { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-      .comentario-meta { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
-      .comentario-texto { font-size: 13px; color: #374151; line-height: 1.5; }
-      .sem-comentarios { font-size: 13px; color: #6b7280; font-style: italic; }
-      .total-geral { background: #fff; border-radius: 14px; padding: 24px; text-align: center; border: 1px solid #e5e0d5; margin-top: 8px; }
-      .total-label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-      .total-nps { font-size: 40px; font-weight: 700; }
-      .total-resp { font-size: 13px; color: #6b7280; margin-top: 4px; }
-      @media print { body { background: #fff; padding: 20px; } }
-    </style></head><body>
-    <div class="logo">Hannover <span>NPS</span></div>
-    <div class="subtitulo">Relatório de Pesquisas</div>
-    <div class="periodo">Período: ${dataFiltro}</div>`;
-
-    for (const [unidade, registros] of Object.entries(unidades)) {
-      const notas      = registros.map(r => r.nota);
-      const total      = notas.length;
-      const n8         = notas.filter(n => n === 8).length;
-      const n9         = notas.filter(n => n === 9).length;
-      const n10        = notas.filter(n => n === 10).length;
-      const promotores = n10;
-      const neutros    = n8 + n9;
-      const detratores = notas.filter(n => n < 8).length;
-      const nps        = (((promotores - detratores) / total) * 100).toFixed(1);
-      const corNps     = parseFloat(nps) >= 75 ? '#16a34a' : parseFloat(nps) >= 50 ? '#ca8a04' : '#dc2626';
-      const comentarios = registros.filter(r => r.comentario && r.comentario.trim() !== '');
-
-      html += `<div class="unidade-bloco">
-        <div class="unidade-header">
-          <div class="unidade-nome">${unidade}</div>
-          <div class="nps-badge" style="color:${corNps}">NPS ${nps}</div>
-        </div>
-        <div class="grid3">
-          <div class="box"><div class="box-label">Nota 8</div><div class="box-valor" style="color:#6b7280">${n8}</div><div class="box-pct">${total>0?((n8/total)*100).toFixed(0):0}%</div></div>
-          <div class="box"><div class="box-label">Nota 9</div><div class="box-valor" style="color:#c9a84c">${n9}</div><div class="box-pct">${total>0?((n9/total)*100).toFixed(0):0}%</div></div>
-          <div class="box"><div class="box-label">Nota 10</div><div class="box-valor" style="color:#1a3a2a">${n10}</div><div class="box-pct">${total>0?((n10/total)*100).toFixed(0):0}%</div></div>
-        </div>
-        <div class="grid3" style="margin-bottom:12px;">
-          <div class="box"><div class="box-label">😊 Promotores</div><div class="box-valor" style="color:#16a34a;font-size:16px;">${total>0?((promotores/total)*100).toFixed(1):0}%</div><div class="box-pct">${promotores} resp.</div></div>
-          <div class="box"><div class="box-label">😐 Neutros</div><div class="box-valor" style="color:#ca8a04;font-size:16px;">${total>0?((neutros/total)*100).toFixed(1):0}%</div><div class="box-pct">${neutros} resp.</div></div>
-          <div class="box"><div class="box-label">😞 Detratores</div><div class="box-valor" style="color:#dc2626;font-size:16px;">${total>0?((detratores/total)*100).toFixed(1):0}%</div><div class="box-pct">${detratores} resp.</div></div>
-        </div>
-        <div class="total-linha">Total: ${total} respostas</div>
-        <div class="comentarios-titulo">💬 Comentários (${comentarios.length})</div>
-        ${comentarios.length === 0
-          ? '<div class="sem-comentarios">Nenhum comentário neste período.</div>'
-          : comentarios.map(r => `<div class="comentario">
-              <div class="comentario-cliente">${r.nome||'Cliente'} · Nota ${r.nota} · ${r.unidade||''}</div>
-              <div class="comentario-meta">📅 Visita: ${formatarDataBR(r.data_visita)} · 📱 ${formatarTel(r.telefone)}</div>
-              <div class="comentario-texto">${r.comentario}</div>
-            </div>`).join('')
-        }
-      </div>`;
-    }
-
-    const todasNotas = dados.map(r => r.nota);
-    const totalGeral = todasNotas.length;
-    const promGeral  = todasNotas.filter(n => n === 10).length;
-    const detGeral   = todasNotas.filter(n => n < 8).length;
-    const npsGeral   = (((promGeral - detGeral) / totalGeral) * 100).toFixed(1);
-    const corGeral   = parseFloat(npsGeral) >= 75 ? '#16a34a' : parseFloat(npsGeral) >= 50 ? '#ca8a04' : '#dc2626';
-
-    html += `<div class="total-geral">
-      <div class="total-label">NPS Geral</div>
-      <div class="total-nps" style="color:${corGeral}">${npsGeral}</div>
-      <div class="total-resp">${totalGeral} respostas no total</div>
-    </div>
-    <script>window.onload = () => { window.print(); }<\/script>
-    </body></html>`;
-
-    win.document.write(html);
-    win.document.close();
   }
 
   function exportarCSV() {
@@ -492,20 +480,16 @@
     for (const [unidade, registros] of Object.entries(unidades)) {
       const notas      = registros.map(r => r.nota);
       const total      = notas.length;
-      const n8         = notas.filter(n => n === 8).length;
-      const n9         = notas.filter(n => n === 9).length;
-      const n10        = notas.filter(n => n === 10).length;
-      const promotores = n10;
-      const neutros    = n8 + n9;
-      const detratores = notas.filter(n => n < 8).length;
+      const promotores = notas.filter(n => n === 9 || n === 10).length;
+      const neutros    = notas.filter(n => n === 7 || n === 8).length;
+      const detratores = notas.filter(n => n <= 6).length;
       const nps        = (((promotores - detratores) / total) * 100).toFixed(1);
 
       // Cabeçalho da unidade
       linhas.push([`"=== ${unidade} ==="`, `"NPS: ${nps}"`, `"Total: ${total} respostas"`, '', '', '']);
-      linhas.push(['"Promotores (Nota 10)"', `"${promotores} resp."`, `"${total>0?((promotores/total)*100).toFixed(1):0}%"`, '', '', '']);
-      linhas.push(['"Neutros (Notas 8-9)"',  `"${neutros} resp."`,    `"${total>0?((neutros/total)*100).toFixed(1):0}%"`,    '', '', '']);
-      linhas.push(['"Detratores (<8)"',       `"${detratores} resp."`, `"${total>0?((detratores/total)*100).toFixed(1):0}%"`, '', '', '']);
-      linhas.push(['"Nota 8"', `"${n8}"`, '"Nota 9"', `"${n9}"`, '"Nota 10"', `"${n10}"`]);
+      linhas.push(['"Promotores (Notas 9-10)"', `"${promotores} resp."`, `"${total>0?((promotores/total)*100).toFixed(1):0}%"`, '', '', '']);
+      linhas.push(['"Neutros (Notas 7-8)"',  `"${neutros} resp."`,    `"${total>0?((neutros/total)*100).toFixed(1):0}%"`,    '', '', '']);
+      linhas.push(['"Detratores (Notas 0-6)"',       `"${detratores} resp."`, `"${total>0?((detratores/total)*100).toFixed(1):0}%"`, '', '', '']);
       linhas.push(['', '', '', '', '', '']);
 
       // Cabeçalho dos feedbacks
@@ -530,9 +514,28 @@
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = `relatorio-nps-${new Date().toISOString().split('T')[0]}.csv`;
+    const per = window._periodoRelatorio || {};
+    const slug = per.unidade ? '-' + per.unidade.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-') : '';
+    a.download = `relatorio-nps${slug}-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }  function salvarPDF() {
+    const conteudo = document.getElementById('resultadoRelatorio');
+    if (!conteudo || !conteudo.innerHTML.trim()) return;
+
+    const periodo = window._periodoRelatorio || {};
+    const slugUnidade = periodo.unidade
+      ? '_' + periodo.unidade.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')
+      : '';
+    const nomeArquivo = `relatorio-nps-hannover${slugUnidade}_${periodo.inicio || 'inicio'}_a_${periodo.fim || 'fim'}`;
+
+    // Usa o título da página como sugestão de nome de arquivo na caixa de impressão do navegador
+    const tituloOriginal = document.title;
+    document.title = nomeArquivo;
+
+    window.print();
+
+    setTimeout(() => { document.title = tituloOriginal; }, 1000);
   }
 </script>
 </body>
