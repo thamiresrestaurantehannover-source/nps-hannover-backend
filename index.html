@@ -289,19 +289,23 @@
 
   // RELATÓRIO
 
-  // Normaliza qualquer variação do nome da unidade para um nome canônico único.
-  // Ignora acento, maiúsculas/minúsculas e o prefixo "Fondue", então
-  // "Tatuape", "Tatuapé", "TATUAPÉ", "Fondue Tatuapé" caem todos em "Tatuapé".
-  function canonUnidade(val) {
-    const base = (val || '')
+  // CHAVE ASCII para COMPARAR e AGRUPAR unidades: remove acento, maiúsculas
+  // e o prefixo "Fondue". Assim "Tatuape", "Tatuapé", "TATUAPÉ" e
+  // "Fondue Tatuapé" viram todos a mesma chave "tatuape". Toda comparação
+  // no relatório usa esta chave — nunca o nome com acento — então acento
+  // nunca mais quebra o filtro.
+  function chaveUnidade(val) {
+    return (val || '')
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
       .replace(/^fondue\s+/i, '')                        // remove prefixo "Fondue"
       .trim()
       .toLowerCase();
-    if (base === 'moema')    return 'Moema';
-    if (base === 'tatuape')  return 'Tatuapé';
-    if (base === 'perdizes') return 'Perdizes';
-    return (val || '').trim(); // desconhecida: mantém como veio
+  }
+
+  // Nome bonito para EXIBIR (o acento entra só aqui, na tela).
+  const NOMES_UNIDADE = { moema: 'Moema', tatuape: 'Tatuapé', perdizes: 'Perdizes' };
+  function nomeUnidade(val) {
+    return NOMES_UNIDADE[chaveUnidade(val)] || (val || '').trim();
   }
 
   function normalizarData(val) {
@@ -341,7 +345,8 @@
     const url        = document.getElementById('backendUrl').value.trim();
     const dataInicio = document.getElementById('dataInicio').value;
     const dataFim    = document.getElementById('dataFim').value;
-    const unidadeSel = canonUnidade(document.getElementById('filtroUnidade').value);
+    const unidadeSelChave = chaveUnidade(document.getElementById('filtroUnidade').value);
+    const unidadeSelNome  = unidadeSelChave ? nomeUnidade(unidadeSelChave) : '';
 
     mostrarAlerta('alertaRelatorio', 'carregando', '⏳ Carregando resultados...');
     document.getElementById('resultadoRelatorio').innerHTML = '';
@@ -355,11 +360,12 @@
         return;
       }
 
-      // Normaliza nomes de unidade (à prova de acento) e mantém apenas as 3 casas (esconde fondues)
-      const UNIDADES_VISIVEIS = ['Moema', 'Tatuapé', 'Perdizes'];
+      // Mantém apenas as 3 casas (esconde fondues) comparando por CHAVE ASCII,
+      // e guarda o nome bonito (com acento) para exibir.
+      const CHAVES_VISIVEIS = ['moema', 'tatuape', 'perdizes'];
       data = data
-        .map(r => ({ ...r, unidade: canonUnidade(r.unidade) }))
-        .filter(r => UNIDADES_VISIVEIS.includes(r.unidade));
+        .filter(r => CHAVES_VISIVEIS.includes(chaveUnidade(r.unidade)))
+        .map(r => ({ ...r, unidade: nomeUnidade(r.unidade) }));
 
       if (data.length === 0) {
         mostrarAlerta('alertaRelatorio', 'erro', '📭 Nenhuma resposta registrada ainda.');
@@ -367,7 +373,7 @@
       }
 
       // Preenche o seletor de unidades com as que existem nos dados (mantém a seleção atual)
-      atualizarOpcoesUnidade(data, unidadeSel);
+      atualizarOpcoesUnidade(data, unidadeSelNome);
 
       if (dataInicio || dataFim) {
         data = data.filter(r => {
@@ -379,14 +385,14 @@
         });
       }
 
-      if (unidadeSel) {
-        data = data.filter(r => r.unidade === unidadeSel);
+      if (unidadeSelChave) {
+        data = data.filter(r => chaveUnidade(r.unidade) === unidadeSelChave);
       }
 
       const comNota = data.filter(r => r.nota !== null);
       if (comNota.length === 0) {
-        mostrarAlerta('alertaRelatorio', 'erro', unidadeSel
-          ? `📭 Nenhuma nota para ${unidadeSel} no período selecionado.`
+        mostrarAlerta('alertaRelatorio', 'erro', unidadeSelChave
+          ? `📭 Nenhuma nota para ${unidadeSelNome} no período selecionado.`
           : '📭 Nenhuma nota recebida no período selecionado.');
         return;
       }
@@ -508,7 +514,7 @@
 
       html += `
         <div class="total-geral">
-          <div class="total-label">${unidadeSel ? 'NPS — ' + unidadeSel : 'NPS Geral'}</div>
+          <div class="total-label">${unidadeSelChave ? 'NPS — ' + unidadeSelNome : 'NPS Geral'}</div>
           <div class="total-nps" style="color:${corGeral}">${npsGeral}</div>
           <div class="total-resp">${totalGeral} respostas de ${enviadasGeral} enviadas · ${ignoradasGeral} ignoradas · ${taxaGeral}% de resposta</div>
         </div>
@@ -518,7 +524,7 @@
       document.getElementById('botoesRelatorio').style.display = 'flex';
       window._dadosRelatorio  = comNota;
       window._unidadesRelatorio = unidades;
-      window._periodoRelatorio = { inicio: document.getElementById('dataInicio').value, fim: document.getElementById('dataFim').value, unidade: unidadeSel };
+      window._periodoRelatorio = { inicio: document.getElementById('dataInicio').value, fim: document.getElementById('dataFim').value, unidade: unidadeSelNome };
 
     } catch (e) {
       mostrarAlerta('alertaRelatorio', 'erro', '❌ Erro ao carregar: ' + e.message);
