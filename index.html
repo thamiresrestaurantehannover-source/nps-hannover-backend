@@ -190,7 +190,7 @@
       <select id="filtroUnidade">
         <option value="">Todas as unidades</option>
         <option value="Moema">Moema</option>
-        <option value="Tatuapé">Tatuapé</option>
+        <option value="Tatuape">Tatuapé</option>
         <option value="Perdizes">Perdizes</option>
       </select>
     </div>
@@ -288,6 +288,22 @@
   }
 
   // RELATÓRIO
+
+  // Normaliza qualquer variação do nome da unidade para um nome canônico único.
+  // Ignora acento, maiúsculas/minúsculas e o prefixo "Fondue", então
+  // "Tatuape", "Tatuapé", "TATUAPÉ", "Fondue Tatuapé" caem todos em "Tatuapé".
+  function canonUnidade(val) {
+    const base = (val || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/^fondue\s+/i, '')                        // remove prefixo "Fondue"
+      .trim()
+      .toLowerCase();
+    if (base === 'moema')    return 'Moema';
+    if (base === 'tatuape')  return 'Tatuapé';
+    if (base === 'perdizes') return 'Perdizes';
+    return (val || '').trim(); // desconhecida: mantém como veio
+  }
+
   function normalizarData(val) {
     if (!val) return null;
     const s = String(val).split('T')[0];
@@ -325,7 +341,7 @@
     const url        = document.getElementById('backendUrl').value.trim();
     const dataInicio = document.getElementById('dataInicio').value;
     const dataFim    = document.getElementById('dataFim').value;
-    const unidadeSel = document.getElementById('filtroUnidade').value;
+    const unidadeSel = canonUnidade(document.getElementById('filtroUnidade').value);
 
     mostrarAlerta('alertaRelatorio', 'carregando', '⏳ Carregando resultados...');
     document.getElementById('resultadoRelatorio').innerHTML = '';
@@ -339,13 +355,11 @@
         return;
       }
 
-      // Normaliza nomes de unidade e mantém apenas as 3 casas (esconde fondues)
+      // Normaliza nomes de unidade (à prova de acento) e mantém apenas as 3 casas (esconde fondues)
       const UNIDADES_VISIVEIS = ['Moema', 'Tatuapé', 'Perdizes'];
-      data = data.map(r => {
-        let u = (r.unidade || '').trim();
-        if (u === 'Tatuape') u = 'Tatuapé';   // junta sem-acento com acento
-        return { ...r, unidade: u };
-      }).filter(r => UNIDADES_VISIVEIS.includes(r.unidade));
+      data = data
+        .map(r => ({ ...r, unidade: canonUnidade(r.unidade) }))
+        .filter(r => UNIDADES_VISIVEIS.includes(r.unidade));
 
       if (data.length === 0) {
         mostrarAlerta('alertaRelatorio', 'erro', '📭 Nenhuma resposta registrada ainda.');
@@ -366,7 +380,7 @@
       }
 
       if (unidadeSel) {
-        data = data.filter(r => (r.unidade || 'Não informada') === unidadeSel);
+        data = data.filter(r => r.unidade === unidadeSel);
       }
 
       const comNota = data.filter(r => r.nota !== null);
